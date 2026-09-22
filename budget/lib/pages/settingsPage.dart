@@ -9,7 +9,6 @@ import 'package:budget/pages/editHomePage.dart';
 import 'package:budget/pages/editObjectivesPage.dart';
 import 'package:budget/pages/homePage/homePageNetWorth.dart';
 import 'package:budget/pages/objectivesListPage.dart';
-import 'package:budget/pages/premiumPage.dart';
 import 'package:budget/pages/transactionsListPage.dart';
 import 'package:budget/pages/upcomingOverdueTransactionsPage.dart';
 import 'package:budget/struct/currencyFunctions.dart';
@@ -49,7 +48,6 @@ import 'package:budget/widgets/tappable.dart';
 import 'package:budget/widgets/textWidgets.dart';
 import 'package:budget/widgets/util/checkWidgetLaunch.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:budget/main.dart';
 import 'package:flutter/services.dart';
@@ -60,6 +58,7 @@ import 'package:budget/struct/settings.dart';
 import 'package:budget/widgets/framework/popupFramework.dart';
 import 'package:app_settings/app_settings.dart';
 import '../widgets/outlinedButtonStacked.dart';
+import 'package:budget/struct/localBackup.dart';
 
 //To get SHA1 Key run
 // ./gradlew signingReport
@@ -114,13 +113,7 @@ class MoreActionsPageState extends State<MoreActionsPage> {
             ],
           ),
         ],
-        listWidgets: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(bottom: 8.0),
-            child: PremiumBanner(),
-          ),
-          MorePages()
-        ],
+        listWidgets: [MorePages()],
       );
     });
   }
@@ -226,8 +219,6 @@ class MorePages extends StatelessWidget {
                       ),
                     )
                   : SizedBox.shrink(),
-              if (hasSideNavigation == false)
-                Expanded(child: GoogleAccountLoginButton()),
             ],
           ),
           if (hasSideNavigation == false)
@@ -598,12 +589,9 @@ class SettingsPageContent extends StatelessWidget {
 
         ExportDB(),
 
-        ImportDB(),
+        LocalBackupDirectory(),
 
-        GoogleAccountLoginButton(
-          isOutlinedButton: false,
-          forceButtonName: "google-drive".tr(),
-        ),
+        ImportDB(),
       ],
     );
   }

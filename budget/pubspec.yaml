@@ -15,7 +15,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 5.3.4+396
+version: 5.3.4+1
 
 environment:
   sdk: ">= 3.0.0"
@@ -37,8 +37,6 @@ dependencies:
   path: ^1.8.3
   math_expressions: ^2.2.0
   share_plus: ^4.0.4
-  google_sign_in: ^6.1.4
-  googleapis: ^11.2.0
   universal_html: ^2.0.8
   flutter_charset_detector: ^1.0.2
   file_picker:
@@ -66,12 +64,6 @@ dependencies:
   animated_fractionally_sized_box: ^2.0.1
   flutter_local_notifications: ^14.0.0+1
   system_theme: ^2.3.1
-  firebase_core: ^2.7.1
-  firebase_auth: ^4.2.2
-  cloud_firestore: ^4.4.4
-  firebase_core_web: ^2.2.2
-  firebase_auth_web: ^5.2.10
-  recaptcha_enterprise_flutter: ^18.4.0
   sliver_tools: ^0.2.12
   reorderable_grid_view:
     git:
@@ -109,6 +101,8 @@ flutter_icons:
   ios: true
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21
+  adaptive_icon_background: "#0C0C0C"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
   web:
     generate: true
     image_path: "assets/icon/icon-web.png"

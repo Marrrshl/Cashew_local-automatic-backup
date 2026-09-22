@@ -1,4 +1,4 @@
-package com.budget.tracker_app
+package com.budget.cashewfork
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -11,12 +11,12 @@ import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 
-class TransferWidgetProvider : HomeWidgetProvider() {
+class PlusWidgetProvider : HomeWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
         appWidgetIds.forEach { widgetId ->
 
-            val views = RemoteViews(context.packageName, R.layout.transfer_widget_layout).apply {
+            val views = RemoteViews(context.packageName, R.layout.plus_widget_layout).apply {
 
                 try {
                   setInt(R.id.widget_background, "setColorFilter",  android.graphics.Color.parseColor(widgetData.getString("widgetColorBackground", null)
@@ -29,7 +29,7 @@ class TransferWidgetProvider : HomeWidgetProvider() {
                 }catch (e: Exception){}
 
                 try {
-                  setInt(R.id.transfer_image, "setColorFilter",  android.graphics.Color.parseColor(widgetData.getString("widgetColorText", null)
+                  setInt(R.id.plus_image, "setColorFilter",  android.graphics.Color.parseColor(widgetData.getString("widgetColorText", null)
                   ?: "#FFFFFF"));
                 }catch (e: Exception){}
                 
@@ -37,7 +37,7 @@ class TransferWidgetProvider : HomeWidgetProvider() {
                   val pendingIntentWithData = HomeWidgetLaunchIntent.getActivity(
                           context,
                           MainActivity::class.java,
-                          Uri.parse("transferTransactionWidget"))
+                          Uri.parse("addTransactionWidget"))
                   setOnClickPendingIntent(R.id.widget_container, pendingIntentWithData)
                 }catch (e: Exception){}
 

@@ -16,20 +16,35 @@ Future<FinanceDatabase> constructDb(String dbName,
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, dbName + '.sqlite'));
     // return NativeDatabase(file);
-    QueryExecutor foregroundExecutor = NativeDatabase(file);
-    QueryExecutor backgroundExecutor = NativeDatabase.createInBackground(file);
+    QueryExecutor foregroundExecutor = NativeDatabase(file, setup: (db) {
+      db.execute('PRAGMA journal_mode = WAL');
+      db.execute('PRAGMA synchronous = NORMAL');
+    });
+    QueryExecutor backgroundExecutor =
+        NativeDatabase.createInBackground(file, setup: (db) {
+      db.execute('PRAGMA journal_mode = WAL');
+      db.execute('PRAGMA synchronous = NORMAL');
+    });
     return MultiExecutor(read: foregroundExecutor, write: backgroundExecutor);
   });
   return FinanceDatabase(db);
 }
 
 Future<DBFileInfo> getCurrentDBFileInfo() async {
+  // Ensure all WAL changes are flushed to the main database file before reading
+  try {
+    await database.customStatement('PRAGMA wal_checkpoint(FULL);');
+    print("Database checkpoint successful.");
+  } catch (e) {
+    print("Error during database checkpoint: $e");
+  }
+
   Uint8List dbFileBytes;
   late Stream<List<int>> mediaStream;
 
   final dbFolder = await getApplicationDocumentsDirectory();
   final dbFile = File(p.join(dbFolder.path, 'db.sqlite'));
-  //print("FILE SIZE:" + (dbFile.lengthSync() / 1e+6).toString());
+  
   dbFileBytes = await dbFile.readAsBytes();
   mediaStream = Stream.value(List<int>.from(dbFileBytes));
 

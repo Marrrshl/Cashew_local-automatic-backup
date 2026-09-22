@@ -22,6 +22,7 @@ import 'package:budget/widgets/radioItems.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:budget/widgets/framework/popupFramework.dart';
 import 'package:budget/pages/activityPage.dart';
+import 'package:budget/struct/localBackup.dart';
 
 Map<String, dynamic> appStateSettings = {};
 bool isDatabaseCorrupted = false;
@@ -36,9 +37,24 @@ Future<bool> initializeSettings() async {
     try {
       print("Settings were loaded from backup, trying to restore");
       String storedSettings = (await database.getSettings()).settingsJSON;
+
+      // Preserve local backup settings
+      String? localBackupDirectory = userSettings["localBackupDirectory"];
+      int? localBackupRetention = userSettings["localBackupRetention"];
+      bool? hasPromptedBackupSetup = userSettings[hasPromptedBackupSetupSetting];
+
       await sharedPreferences.setString('userSettings', storedSettings);
       print(storedSettings);
       userSettings = json.decode(storedSettings);
+
+      // Restore local backup settings
+      userSettings["localBackupDirectory"] = localBackupDirectory;
+      userSettings["localBackupRetention"] = localBackupRetention;
+      userSettings[hasPromptedBackupSetupSetting] = hasPromptedBackupSetup ?? true;
+
+      // Update shared preferences with the merged settings
+      await sharedPreferences.setString('userSettings', json.encode(userSettings));
+
       //we need to load any defaults to migrate if on an older version backup restores
       //Set to defaults if a new setting is added, but no entry saved
       Map<String, dynamic> userPreferencesDefault =
@@ -196,6 +212,29 @@ Future<bool> updateSettings(
     }
   }
 
+  const Set<String> skipBackupForSettings = {
+    localBackupDirectorySetting,
+    localBackupRetentionSetting,
+    hasPromptedBackupSetupSetting,
+    "databaseJustImported",
+    "numLogins",
+    "appOpenedHour",
+    "appOpenedMinute",
+    "lastLoginVersion",
+    "cachedCurrencyExchange",
+    "premiumPopupAddTransactionCount",
+    "premiumPopupFreeSeen",
+    "dismissedStoreRating",
+    "openedStoreRating",
+    "transactionsListPageSetFiltersString",
+    "searchTransactionsSetFiltersString",
+    "allSpendingSetFiltersString",
+  };
+
+  if (!skipBackupForSettings.contains(setting)) {
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+  }
+
   return true;
 }
 
@@ -309,8 +348,19 @@ Future<void> resetLanguageToSystem(BuildContext context) async {
 
 // Backup user settings by creating an entry in the db
 Future backupSettings() async {
-  String userSettings = sharedPreferences.getString('userSettings') ?? "";
-  if (userSettings == "") throw ("No settings stored");
+  String userSettingsRaw = sharedPreferences.getString('userSettings') ?? "";
+  if (userSettingsRaw == "") throw ("No settings stored");
+
+  Map<String, dynamic> settingsMap = json.decode(userSettingsRaw);
+
+  // The backup file should not include the "Automatic backup folder" path or device onboarding status.
+  // The path and prompt status should be independent from the SQL file and local to each profile.
+  settingsMap.remove(localBackupDirectorySetting);
+  settingsMap.remove(localBackupRetentionSetting);
+  settingsMap.remove(hasPromptedBackupSetupSetting);
+
+  String userSettings = json.encode(settingsMap);
+
   await database.createOrUpdateSettings(
     AppSetting(
       settingsPk: 0,
@@ -318,7 +368,7 @@ Future backupSettings() async {
       dateUpdated: DateTime.now(),
     ),
   );
-  print("Created settings entry in DB");
+  print("Created settings entry in DB (filtered backup paths)");
 }
 
 class TranslationsHelp extends StatelessWidget {

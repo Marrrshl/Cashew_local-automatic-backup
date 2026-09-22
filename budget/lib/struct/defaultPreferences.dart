@@ -19,6 +19,8 @@ import 'package:flutter/services.dart';
 Future<Map<String, dynamic>> getDefaultPreferences() async {
   return {
     "databaseJustImported": false,
+    "localBackupDirectory": null,
+    "localBackupRetention": 5,
     "backupLimit": 20,
     "backupSync": true,
     "syncEveryChange": kIsWeb,

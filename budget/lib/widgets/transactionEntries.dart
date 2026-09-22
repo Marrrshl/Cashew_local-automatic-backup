@@ -30,7 +30,6 @@ import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/widgets/ghostTransactions.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_sticky_header/flutter_sticky_header.dart';
-import 'package:googleapis/analyticsreporting/v4.dart';
 import 'package:implicitly_animated_reorderable_list/implicitly_animated_reorderable_list.dart';
 import 'package:implicitly_animated_reorderable_list/transitions.dart';
 import 'package:provider/provider.dart';
@@ -470,7 +469,7 @@ class _TransactionEntriesState extends State<TransactionEntries> {
                       sticky: true,
                       sliver:
                           SliverImplicitlyAnimatedList<TransactionWithCategory>(
-                        spawnIsolate: false,
+                        spawnIsolate: true,
                         items: transactionListForDay,
                         areItemsTheSame: (a, b) =>
                             a.transaction.transactionPk ==

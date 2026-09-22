@@ -7,6 +7,7 @@ import 'package:budget/pages/homePage/homePagePieChart.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/languageMap.dart';
 import 'package:budget/struct/settings.dart';
+import 'package:budget/struct/localBackup.dart';
 import 'package:budget/widgets/accountAndBackup.dart';
 import 'package:budget/widgets/button.dart';
 import 'package:budget/widgets/currencyPicker.dart';
@@ -93,7 +94,7 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
     super.didChangeDependencies();
   }
 
-  nextNavigation({bool generatePreview = false}) async {
+  Future<void> nextNavigation({bool generatePreview = false}) async {
     if (selectedAmount != null && selectedAmount != 0) {
       int order = await database.getAmountOfBudgets();
       await database.createOrUpdateBudget(
@@ -134,7 +135,8 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
     if (widget.popNavigationWhenDone) {
       Navigator.pop(context);
     } else {
-      updateSettings("hasOnboarded", true,
+      startupBackupCheckComplete = false;
+      await updateSettings("hasOnboarded", true,
           pagesNeedingRefresh: [], updateGlobalState: true);
     }
   }
@@ -182,6 +184,10 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
     if ((controller.page?.round().toInt() ?? 0) + 1 == numPages) {
       nextNavigation();
     }
+  }
+
+  void finishOnboarding() {
+    nextNavigation();
   }
 
   void previousOnBoardPage() {
@@ -418,6 +424,7 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
           ),
         ],
       ),
+      /* Google sign-in onboarding has been removed for the local-only fork.
       OnBoardPage(
         widgets: [
           Container(
@@ -574,6 +581,7 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
           // ),
         ],
       ),
+      */
     ];
 
     return Stack(
@@ -651,17 +659,16 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
                         int currentIndex =
                             controller.page?.round().toInt() ?? 0;
                         return AnimatedOpacity(
-                          opacity: getPlatform() == PlatformOS.isIOS
-                              ? 1
-                              : currentIndex >= children.length - 1
-                                  ? 0
-                                  : 1,
+                          opacity: 1,
                           duration: Duration(milliseconds: 200),
                           child: ButtonIcon(
                             onTap: () {
                               if (currentIndex < children.length - 1 ||
-                                  getPlatform() == PlatformOS.isIOS)
+                                  getPlatform() == PlatformOS.isIOS) {
                                 nextOnBoardPage(children.length);
+                              } else {
+                                nextNavigation();
+                              }
                             },
                             icon: getPlatform() == PlatformOS.isIOS
                                 ? appStateSettings["outlinedIcons"]

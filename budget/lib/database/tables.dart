@@ -4,14 +4,13 @@ import 'package:budget/pages/homePage/homePageLineGraph.dart';
 import 'package:budget/pages/objectivesListPage.dart';
 import 'package:budget/pages/transactionFilters.dart';
 import 'package:budget/struct/databaseGlobal.dart';
-import 'package:budget/struct/firebaseAuthGlobal.dart';
 import 'package:budget/struct/settings.dart';
+import 'package:budget/struct/localBackup.dart';
 import 'package:budget/struct/shareBudget.dart';
 import 'package:budget/struct/syncClient.dart';
 import 'package:budget/widgets/navigationFramework.dart';
 import 'package:budget/widgets/periodCyclePicker.dart';
 import 'package:budget/widgets/walletEntry.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:async/async.dart';
 import 'package:drift/drift.dart';
@@ -2225,6 +2224,7 @@ class FinanceDatabase extends _$FinanceDatabase {
         where: (b) => b.budgetPk.equals(budgetPk),
       );
     });
+    scheduleAutomaticLocalBackup();
   }
 
   Future moveObjective(String objectivePk, int newPosition, int oldPosition,
@@ -2273,6 +2273,7 @@ class FinanceDatabase extends _$FinanceDatabase {
         where: (b) => b.objectivePk.equals(objectivePk),
       );
     });
+    scheduleAutomaticLocalBackup();
   }
 
   Future<bool> shiftBudgets(int direction, int pastIndexIncluding) async {
@@ -2294,6 +2295,7 @@ class FinanceDatabase extends _$FinanceDatabase {
           ),
         );
       }
+      scheduleAutomaticLocalBackup();
     } else {
       return false;
     }
@@ -2321,6 +2323,7 @@ class FinanceDatabase extends _$FinanceDatabase {
           ),
         );
       }
+      scheduleAutomaticLocalBackup();
     } else {
       return false;
     }
@@ -2582,6 +2585,7 @@ class FinanceDatabase extends _$FinanceDatabase {
         where: (w) => w.walletPk.equals(walletPk),
       );
     });
+    scheduleAutomaticLocalBackup();
   }
 
   Future<bool> shiftWallets(int direction, int pastIndexIncluding) async {
@@ -2603,6 +2607,7 @@ class FinanceDatabase extends _$FinanceDatabase {
           ),
         );
       }
+      scheduleAutomaticLocalBackup();
     } else {
       return false;
     }
@@ -2684,7 +2689,7 @@ class FinanceDatabase extends _$FinanceDatabase {
 
   //create or update a new wallet
   Future<int> createOrUpdateWallet(TransactionWallet wallet,
-      {DateTime? customDateTimeModified, bool insert = false}) {
+      {DateTime? customDateTimeModified, bool insert = false}) async {
     wallet = wallet.copyWith(
         dateTimeModified: Value(customDateTimeModified ?? DateTime.now()));
     WalletsCompanion companionToInsert = wallet.toCompanion(true);
@@ -2697,8 +2702,10 @@ class FinanceDatabase extends _$FinanceDatabase {
       );
     }
 
-    return into(wallets)
+    final result = await into(wallets)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   //create or update a new objective
@@ -2748,13 +2755,15 @@ class FinanceDatabase extends _$FinanceDatabase {
       // }
     }
 
-    return into(objectives)
+    final result = await into(objectives)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   //create or update a new wallet
   Future<int> createOrUpdateScannerTemplate(ScannerTemplate scannerTemplate,
-      {bool insert = false}) {
+      {bool insert = false}) async {
     scannerTemplate =
         scannerTemplate.copyWith(dateTimeModified: Value(DateTime.now()));
     ScannerTemplatesCompanion companionToInsert =
@@ -2766,12 +2775,14 @@ class FinanceDatabase extends _$FinanceDatabase {
           companionToInsert.copyWith(scannerTemplatePk: Value.absent());
     }
 
-    return into(scannerTemplates)
+    final result = await into(scannerTemplates)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   Future<int> createOrUpdateCategoryLimit(CategoryBudgetLimit categoryLimit,
-      {bool insert = false}) {
+      {bool insert = false}) async {
     categoryLimit =
         categoryLimit.copyWith(dateTimeModified: Value(DateTime.now()));
 
@@ -2784,8 +2795,10 @@ class FinanceDatabase extends _$FinanceDatabase {
           companionToInsert.copyWith(categoryLimitPk: Value.absent());
     }
 
-    return into(categoryBudgetLimits)
+    final result = await into(categoryBudgetLimits)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   Stream<List<TransactionAssociatedTitleWithCategory>> watchAllAssociatedTitles(
@@ -3044,7 +3057,7 @@ class FinanceDatabase extends _$FinanceDatabase {
   Future<int> createOrUpdateAssociatedTitle(
     TransactionAssociatedTitle associatedTitle, {
     insert = false,
-  }) {
+  }) async {
     associatedTitle =
         associatedTitle.copyWith(dateTimeModified: Value(DateTime.now()));
     AssociatedTitlesCompanion companionToInsert =
@@ -3056,8 +3069,10 @@ class FinanceDatabase extends _$FinanceDatabase {
           companionToInsert.copyWith(associatedTitlePk: Value.absent());
     }
 
-    return into(associatedTitles)
+    final result = await into(associatedTitles)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   Future moveAssociatedTitle(
@@ -3107,6 +3122,7 @@ class FinanceDatabase extends _$FinanceDatabase {
         where: (t) => t.associatedTitlePk.equals(associatedTitlePk),
       );
     });
+    scheduleAutomaticLocalBackup();
   }
 
   Future<bool> fixOrderBudgets() async {
@@ -3128,6 +3144,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       await batch((batch) {
         batch.insertAll(budgets, budgetsList, mode: InsertMode.replace);
       });
+      scheduleAutomaticLocalBackup();
     }
     return true;
   }
@@ -3153,6 +3170,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       await batch((batch) {
         batch.insertAll(objectives, objectivesList, mode: InsertMode.replace);
       });
+      scheduleAutomaticLocalBackup();
     }
     return true;
   }
@@ -3180,6 +3198,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       await batch((batch) {
         batch.insertAll(categories, categoriesList, mode: InsertMode.replace);
       });
+      scheduleAutomaticLocalBackup();
     }
     return true;
   }
@@ -3203,6 +3222,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       await batch((batch) {
         batch.insertAll(wallets, walletsList, mode: InsertMode.replace);
       });
+      scheduleAutomaticLocalBackup();
     }
     return true;
   }
@@ -3237,6 +3257,7 @@ class FinanceDatabase extends _$FinanceDatabase {
             associatedTitles, (t) => t.associatedTitlePk.isIn(titlesToDelete));
       });
       print("Removed " + duplicatedTitles.length.toString() + " titles");
+      scheduleAutomaticLocalBackup();
     }
 
     return true;
@@ -3263,6 +3284,7 @@ class FinanceDatabase extends _$FinanceDatabase {
         batch.insertAll(associatedTitles, associatedTitlesList,
             mode: InsertMode.replace);
       });
+      scheduleAutomaticLocalBackup();
     }
 
     return true;
@@ -3287,6 +3309,7 @@ class FinanceDatabase extends _$FinanceDatabase {
         batch.insertAll(associatedTitles, associatedTitlesNeedUpdating,
             mode: InsertMode.replace);
       });
+      scheduleAutomaticLocalBackup();
     } else {
       return false;
     }
@@ -3494,8 +3517,10 @@ class FinanceDatabase extends _$FinanceDatabase {
       companionToInsert = companionToInsert.copyWith(methodAdded: Value(null));
     }
 
-    return into(transactions)
+    final result = await into(transactions)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   // ************************************************************
@@ -3716,6 +3741,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(transactions, transactionsInserting,
           mode: InsertMode.insertOrReplace);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3725,6 +3751,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(transactions, transactionsInserting,
           mode: InsertMode.insert);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3734,6 +3761,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(associatedTitles, titlesInserting,
           mode: InsertMode.insert);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3743,6 +3771,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(wallets, walletsInserting,
           mode: InsertMode.insertOrReplace);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3752,6 +3781,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(categories, categoriesInserting,
           mode: InsertMode.insertOrReplace);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3761,6 +3791,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(budgets, budgetsInserting,
           mode: InsertMode.insertOrReplace);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3770,6 +3801,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(categoryBudgetLimits, limitsInserting,
           mode: InsertMode.insertOrReplace);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3779,6 +3811,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(objectives, objectivesInserting,
           mode: InsertMode.insertOrReplace);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3798,6 +3831,7 @@ class FinanceDatabase extends _$FinanceDatabase {
       batch.insertAll(associatedTitles, associatedTitlesInserting,
           mode: InsertMode.insertOrReplace);
     });
+    scheduleAutomaticLocalBackup();
     return true;
   }
 
@@ -3936,8 +3970,7 @@ class FinanceDatabase extends _$FinanceDatabase {
     int result = await into(categories)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
 
-    if (updateSharedEntry)
-      updateTransactionOnServerAfterChangingCategoryInformation(category);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
     return result;
   }
 
@@ -4140,21 +4173,7 @@ class FinanceDatabase extends _$FinanceDatabase {
     print(budget);
 
     if (budget.sharedKey != null && updateSharedEntry == true) {
-      FirebaseFirestore? db = await firebaseGetDBInstance();
-      if (db == null) {
-        return -1;
-      }
-      DocumentReference collectionRef =
-          db.collection('budgets').doc(budget.sharedKey);
-      collectionRef.update({
-        "name": budget.name,
-        "amount": budget.amount,
-        "colour": budget.colour,
-        "startDate": budget.startDate,
-        "endDate": budget.endDate,
-        "periodLength": budget.periodLength,
-        "reoccurrence": enumRecurrence[budget.reoccurrence],
-      });
+      // Shared budgets are disabled in this Google-free fork.
     }
 
     budget = budget.copyWith(dateTimeModified: Value(DateTime.now()));
@@ -4177,8 +4196,10 @@ class FinanceDatabase extends _$FinanceDatabase {
       // }
     }
 
-    return into(budgets)
+    final result = await into(budgets)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   // get category given key
@@ -4648,6 +4669,7 @@ class FinanceDatabase extends _$FinanceDatabase {
         where: (c) => c.categoryPk.equals(categoryPk),
       );
     });
+    scheduleAutomaticLocalBackup();
   }
 
   Future<bool> shiftCategories(int direction, int pastIndexIncluding,
@@ -4673,6 +4695,7 @@ class FinanceDatabase extends _$FinanceDatabase {
           ),
         );
       }
+      scheduleAutomaticLocalBackup();
     } else {
       return false;
     }
@@ -4748,8 +4771,11 @@ class FinanceDatabase extends _$FinanceDatabase {
     await shiftBudgets(-1, budget.order);
     await deleteCategoryBudgetLimitsInBudget(budget.budgetPk);
     await createDeleteLog(DeleteLogType.Budget, budget.budgetPk);
-    return (delete(budgets)..where((b) => b.budgetPk.equals(budget.budgetPk)))
+    final result = await (delete(budgets)
+          ..where((b) => b.budgetPk.equals(budget.budgetPk)))
         .go();
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   Future<int> deleteObjective(context, Objective objective) async {
@@ -4763,9 +4789,11 @@ class FinanceDatabase extends _$FinanceDatabase {
 
     await shiftObjectives(-1, objective.order, objectiveType: objective.type);
     await createDeleteLog(DeleteLogType.Objective, objective.objectivePk);
-    return (delete(objectives)
+    final result = await (delete(objectives)
           ..where((b) => b.objectivePk.equals(objective.objectivePk)))
         .go();
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   //delete transaction given key
@@ -4785,9 +4813,11 @@ class FinanceDatabase extends _$FinanceDatabase {
       }
     }
     await createDeleteLog(DeleteLogType.Transaction, transactionPk);
-    return (delete(transactions)
+    final result = await (delete(transactions)
           ..where((t) => t.transactionPk.equals(transactionPk)))
         .go();
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   Future deleteTransactions(List<String> transactionPks,
@@ -4809,9 +4839,11 @@ class FinanceDatabase extends _$FinanceDatabase {
     }
 
     await createDeleteLogs(DeleteLogType.Transaction, transactionPks);
-    return (delete(transactions)
+    final result = await (delete(transactions)
           ..where((t) => t.transactionPk.isIn(transactionPks)))
         .go();
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   Future forceDeleteBudgets(List<String> budgetPks) async {
@@ -4825,9 +4857,11 @@ class FinanceDatabase extends _$FinanceDatabase {
 
   Future deleteCategoryBudgetLimit(String categoryLimitPk) async {
     await createDeleteLog(DeleteLogType.CategoryBudgetLimit, categoryLimitPk);
-    return (delete(categoryBudgetLimits)
+    final result = await (delete(categoryBudgetLimits)
           ..where((t) => t.categoryLimitPk.equals(categoryLimitPk)))
         .go();
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   Future unAssignSubCategoryFromTransactions(String categoryPk) async {
@@ -4876,11 +4910,13 @@ class FinanceDatabase extends _$FinanceDatabase {
     // print(categoryPk);
     await createDeleteLog(DeleteLogType.TransactionCategory, categoryPk);
     // Delete any category with same key, or subcategory with that key
-    return (delete(categories)
+    final result = await (delete(categories)
           ..where((c) =>
               c.categoryPk.equals(categoryPk) |
               c.mainCategoryPk.equals(categoryPk)))
         .go();
+    scheduleAutomaticLocalBackup();
+    return result;
   }
 
   Future<List<Transaction>> getAllTransactionsSharedInCategory(categoryFk) {
@@ -4958,7 +4994,10 @@ class FinanceDatabase extends _$FinanceDatabase {
     await database.deleteWalletsTransactions(walletPk);
     await database.shiftWallets(-1, order);
     await createDeleteLog(DeleteLogType.TransactionWallet, walletPk);
-    return (delete(wallets)..where((w) => w.walletPk.equals(walletPk))).go();
+    final result =
+        await (delete(wallets)..where((w) => w.walletPk.equals(walletPk))).go();
+    scheduleAutomaticLocalBackup();
+    return result;
   }
 
   Future<bool> moveWalletTransactions(
@@ -5131,9 +5170,11 @@ class FinanceDatabase extends _$FinanceDatabase {
 
   Future deleteScannerTemplate(String scannerTemplatePk) async {
     await createDeleteLog(DeleteLogType.ScannerTemplate, scannerTemplatePk);
-    return (delete(scannerTemplates)
+    final result = await (delete(scannerTemplates)
           ..where((s) => s.scannerTemplatePk.equals(scannerTemplatePk)))
         .go();
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   //delete transactions that belong to specific wallet key
@@ -5146,8 +5187,10 @@ class FinanceDatabase extends _$FinanceDatabase {
     List<String> transactionPks =
         transactionPkForDelete.map((t) => t.transactionPk).toList();
     await createDeleteLogs(DeleteLogType.Transaction, transactionPks);
-    return (delete(transactions)..where((t) => t.walletFk.equals(walletPk)))
+    final result = await (delete(transactions)..where((t) => t.walletFk.equals(walletPk)))
         .go();
+    scheduleAutomaticLocalBackup(isUserEdit: true);
+    return result;
   }
 
   //delete associated title given key
@@ -6298,61 +6341,63 @@ class FinanceDatabase extends _$FinanceDatabase {
   }) {
     DateTime startDate = DateTime(start.year, start.month, start.day);
     DateTime endDate = DateTime(end.year, end.month, end.day);
-    // we have to convert currencies to account for all wallets
-    List<Stream<double?>> mergedStreams = [];
-    for (TransactionWallet wallet in allWallets.list) {
-      if (walletPks != null && walletPks.contains(wallet.walletPk) == false)
-        continue;
-      final totalAmt = transactions.amount.sum(
-          filter: paidOnly == true
-              ? transactions.paid.equals(true)
-              : Constant(true));
-      final query = selectOnly(transactions)
-        ..addColumns([totalAmt])
-        // This query should match that of the one below!
-        // watchTotalSpentInEachCategoryInTimeRangeFromCategories
-        // If you make changes to this, make changes here: watchTotalSpentInEachCategoryInTimeRangeFromCategories
-        ..where(onlyShowIfFollowsSearchFilters(
-              transactions,
-              searchFilters,
-              joinedWithSubcategoriesTable: null,
-              joinedWithCategories: false,
-              joinedWithBudgets: false,
-              joinedWithObjectives: false,
-            ) &
-            onlyShowBasedOnTimeRange(transactions, startDate, endDate, budget,
-                allTime: allTime) &
-            isInCategory(transactions, categoryFks, categoryFksExclude) &
-            onlyShowBasedOnWalletFks(transactions, budget?.walletFks) &
-            onlyShowIfNotBalanceCorrection(transactions, isIncome) &
-            onlyShowIfFollowCustomPeriodCycle(
-              transactions,
-              followCustomPeriodCycle,
-              cycleSettingsExtension: cycleSettingsExtension,
-              forcedDateTimeRange: forcedDateTimeRange,
-            ) &
-            // evaluateIfNull(tbl.income.equals(income ?? false), income, true) &
-            transactions.walletFk.equals(wallet.walletPk) &
-            onlyShowIfFollowsFilters(transactions,
-                budget: budget,
-                budgetTransactionFilters: budgetTransactionFilters,
-                memberTransactionFilters: memberTransactionFilters) &
-            onlyShowIfMember(transactions, member) &
-            onlyShowBasedOnIncome(transactions, isIncome) &
-            onlyShowIfNotExcludedFromBudget(transactions, budget?.budgetPk) &
-            onlyShowIfCertainBudget(
-                transactions, onlyShowTransactionsBelongingToBudgetPk) &
-            (mainCategoryPkIfSubCategories == null
-                ? Constant(true)
-                : transactions.categoryFk
-                    .equals(mainCategoryPkIfSubCategories)));
-      mergedStreams.add(query
-          .map((row) =>
-              (row.read(totalAmt) ?? 0) *
-              (amountRatioToPrimaryCurrency(allWallets, wallet.currency)))
-          .watchSingle());
+
+    // Optimized: Single query instead of per-wallet queries
+    final totalAmt = transactions.amount;
+    final walletFk = transactions.walletFk;
+
+    final query = selectOnly(transactions)
+      ..addColumns([totalAmt, walletFk])
+      ..where(onlyShowIfFollowsSearchFilters(
+            transactions,
+            searchFilters,
+            joinedWithSubcategoriesTable: null,
+            joinedWithCategories: false,
+            joinedWithBudgets: false,
+            joinedWithObjectives: false,
+          ) &
+          onlyShowBasedOnTimeRange(transactions, startDate, endDate, budget,
+              allTime: allTime) &
+          isInCategory(transactions, categoryFks, categoryFksExclude) &
+          onlyShowBasedOnWalletFks(transactions, budget?.walletFks) &
+          onlyShowIfNotBalanceCorrection(transactions, isIncome) &
+          onlyShowIfFollowCustomPeriodCycle(
+            transactions,
+            followCustomPeriodCycle,
+            cycleSettingsExtension: cycleSettingsExtension,
+            forcedDateTimeRange: forcedDateTimeRange,
+          ) &
+          onlyShowIfFollowsFilters(transactions,
+              budget: budget,
+              budgetTransactionFilters: budgetTransactionFilters,
+              memberTransactionFilters: memberTransactionFilters) &
+          onlyShowIfMember(transactions, member) &
+          onlyShowBasedOnIncome(transactions, isIncome) &
+          onlyShowIfNotExcludedFromBudget(transactions, budget?.budgetPk) &
+          onlyShowIfCertainBudget(
+              transactions, onlyShowTransactionsBelongingToBudgetPk) &
+          (mainCategoryPkIfSubCategories == null
+              ? Constant(true)
+              : transactions.categoryFk.equals(mainCategoryPkIfSubCategories)) &
+          (paidOnly == true ? transactions.paid.equals(true) : Constant(true)));
+
+    if (walletPks != null) {
+      query.where(transactions.walletFk.isIn(walletPks));
     }
-    return totalDoubleStream(mergedStreams);
+
+    return query.watch().map((rows) {
+      double total = 0;
+      for (final row in rows) {
+        final amount = row.read(totalAmt) ?? 0;
+        final walletPk = row.read(walletFk);
+        final wallet = allWallets.indexedByPk[walletPk];
+        if (wallet != null) {
+          total += amount *
+              amountRatioToPrimaryCurrency(allWallets, wallet.currency);
+        }
+      }
+      return total;
+    });
   }
 
   // The total amount of that category will always be that last column
@@ -6385,127 +6430,108 @@ class FinanceDatabase extends _$FinanceDatabase {
   }) {
     DateTime startDate = DateTime(start.year, start.month, start.day);
     DateTime endDate = DateTime(end.year, end.month, end.day);
-    List<Stream<List<CategoryWithTotal>>> mergedStreams = [];
 
-    for (TransactionWallet wallet in allWallets.list) {
-      if (walletPks != null && walletPks.contains(wallet.walletPk) == false)
-        continue;
-      final totalAmt = transactions.amount.sum(
-          filter: (paidOnly == true
-              ? transactions.paid.equals(true)
-              : Constant(true)));
-      final totalCount = transactions.transactionPk.count();
+    final totalAmt = transactions.amount;
+    final walletFk = transactions.walletFk;
+    final categoryFkCol = transactions.categoryFk;
+    final subCategoryFkCol = transactions.subCategoryFk;
 
-      final query = (select(transactions)
-        ..where((tbl) {
-          // This query should match that of the one above!
-          // watchTotalOfBudget
-          // If you make changes to this, make changes here: watchTotalOfBudget
-          return onlyShowIfFollowsSearchFilters(
-                tbl,
-                searchFilters,
-                joinedWithSubcategoriesTable: null,
-                joinedWithCategories: false,
-                joinedWithBudgets: false,
-                joinedWithObjectives: false,
-              ) &
-              onlyShowBasedOnTimeRange(transactions, startDate, endDate, budget,
-                  allTime: allTime) &
-              isInCategory(tbl, categoryFks, categoryFksExclude) &
-              onlyShowBasedOnWalletFks(tbl, budget?.walletFks) &
-              onlyShowIfNotBalanceCorrection(transactions, isIncome) &
-              onlyShowIfFollowCustomPeriodCycle(
-                transactions,
-                followCustomPeriodCycle,
-                cycleSettingsExtension: cycleSettingsExtension,
-                forcedDateTimeRange: forcedDateTimeRange,
-              ) &
-              // evaluateIfNull(tbl.income.equals(income ?? false), income, true) &
-              transactions.walletFk.equals(wallet.walletPk) &
-              onlyShowIfFollowsFilters(tbl,
-                  budget: budget,
-                  budgetTransactionFilters: budgetTransactionFilters,
-                  memberTransactionFilters: memberTransactionFilters) &
-              onlyShowIfMember(tbl, member) &
-              onlyShowBasedOnIncome(tbl, isIncome) &
-              onlyShowIfNotExcludedFromBudget(tbl, budget?.budgetPk) &
-              onlyShowIfCertainBudget(
-                  tbl, onlyShowTransactionsBelongingToBudgetPk) &
-              (mainCategoryPkIfSubCategories == null
-                  ? Constant(true)
-                  : transactions.categoryFk
-                      .equals(mainCategoryPkIfSubCategories));
-        })
-        ..orderBy([(c) => OrderingTerm.desc(c.dateCreated)]));
-      mergedStreams.add((query.join([
-        leftOuterJoin(
-            categories,
-            includeAllSubCategories == true
-                ? ((categories.categoryPk
-                            .equalsExp(transactions.subCategoryFk) &
-                        transactions.subCategoryFk.isNotNull()) |
-                    (countUnassignedTransactions == true
-                        ? categories.categoryPk
-                            .equalsExp(transactions.categoryFk)
-                        : (categories.categoryPk
-                                .equalsExp(transactions.categoryFk) &
-                            transactions.subCategoryFk.isNull())))
-                : mainCategoryPkIfSubCategories == null
-                    ? categories.categoryPk.equalsExp(transactions.categoryFk)
-                    : (categories.categoryPk
-                            .equalsExp(transactions.subCategoryFk) |
-                        categories.categoryPk
-                            .equalsExp(transactions.categoryFk))),
-        leftOuterJoin(
-            categoryBudgetLimits,
-            categoryBudgetLimits.categoryFk.equalsExp(categories.categoryPk) &
-                evaluateIfNull(
-                    categoryBudgetLimits.budgetFk
-                        .equals(budget?.budgetPk ?? "0"),
-                    budget,
-                    false))
-      ])
-            ..addColumns([totalAmt, totalCount])
-            ..groupBy([categories.categoryPk]))
-          // totalCategoryTotalStream takes care of the ordering!
-          .map((row) {
-        final TransactionCategory category = row.readTable(categories);
-        CategoryBudgetLimit? categoryBudgetLimit =
-            row.readTableOrNull(categoryBudgetLimits);
+    final query = select(transactions).join([
+      leftOuterJoin(
+          categories,
+          includeAllSubCategories == true
+              ? ((categories.categoryPk.equalsExp(transactions.subCategoryFk) &
+                      transactions.subCategoryFk.isNotNull()) |
+                  (countUnassignedTransactions == true
+                      ? categories.categoryPk.equalsExp(transactions.categoryFk)
+                      : (categories.categoryPk
+                              .equalsExp(transactions.categoryFk) &
+                          transactions.subCategoryFk.isNull())))
+              : mainCategoryPkIfSubCategories == null
+                  ? categories.categoryPk.equalsExp(transactions.categoryFk)
+                  : (categories.categoryPk
+                          .equalsExp(transactions.subCategoryFk) |
+                      categories.categoryPk
+                          .equalsExp(transactions.categoryFk))),
+      leftOuterJoin(
+          categoryBudgetLimits,
+          categoryBudgetLimits.categoryFk.equalsExp(categories.categoryPk) &
+              evaluateIfNull(
+                  categoryBudgetLimits.budgetFk.equals(budget?.budgetPk ?? "0"),
+                  budget,
+                  false))
+    ])
+      ..where(onlyShowIfFollowsSearchFilters(
+            transactions,
+            searchFilters,
+            joinedWithSubcategoriesTable: null,
+            joinedWithCategories: false,
+            joinedWithBudgets: false,
+            joinedWithObjectives: false,
+          ) &
+          onlyShowBasedOnTimeRange(transactions, startDate, endDate, budget,
+              allTime: allTime) &
+          isInCategory(transactions, categoryFks, categoryFksExclude) &
+          onlyShowBasedOnWalletFks(transactions, budget?.walletFks) &
+          onlyShowIfNotBalanceCorrection(transactions, isIncome) &
+          onlyShowIfFollowCustomPeriodCycle(
+            transactions,
+            followCustomPeriodCycle,
+            cycleSettingsExtension: cycleSettingsExtension,
+            forcedDateTimeRange: forcedDateTimeRange,
+          ) &
+          onlyShowIfFollowsFilters(transactions,
+              budget: budget,
+              budgetTransactionFilters: budgetTransactionFilters,
+              memberTransactionFilters: memberTransactionFilters) &
+          onlyShowIfMember(transactions, member) &
+          onlyShowBasedOnIncome(transactions, isIncome) &
+          onlyShowIfNotExcludedFromBudget(transactions, budget?.budgetPk) &
+          onlyShowIfCertainBudget(
+              transactions, onlyShowTransactionsBelongingToBudgetPk) &
+          (mainCategoryPkIfSubCategories == null
+              ? Constant(true)
+              : transactions.categoryFk.equals(mainCategoryPkIfSubCategories)) &
+          (paidOnly == true ? transactions.paid.equals(true) : Constant(true)));
 
-        final double? total = (row.read(totalAmt) ?? 0) *
-            (amountRatioToPrimaryCurrency(allWallets, wallet.currency));
-        final int? transactionCount = row.read(totalCount);
-        return CategoryWithTotal(
-            category: category,
-            categoryBudgetLimit: categoryBudgetLimit,
-            total: total ?? 0,
-            transactionCount: transactionCount ?? -1);
-      }).watch());
+    if (walletPks != null) {
+      query.where(transactions.walletFk.isIn(walletPks));
     }
 
-    return totalCategoryTotalStream(mergedStreams);
+    return query.watch().map((rows) {
+      final Map<String, CategoryWithTotal> categoryTotals = {};
+      for (final row in rows) {
+        final category = row.readTable(categories);
+        final budgetLimit = row.readTableOrNull(categoryBudgetLimits);
+        final amount = row.read(totalAmt) ?? 0;
+        final walletPk = row.read(walletFk);
+        final wallet = allWallets.indexedByPk[walletPk];
 
-    // Stream<List<TransactionCategory>> allCategoriesWatched =
-    //     watchAllCategories();
+        double convertedAmount = 0;
+        if (wallet != null) {
+          convertedAmount = amount *
+              amountRatioToPrimaryCurrency(allWallets, wallet.currency);
+        }
 
-    // return StreamZip(mergedStreams).map((values) {
-    //   List<CategoryWithTotal> allCategoriesWithTotals = [];
-    //   for (List<CategoryWithTotal> categoriesWithTotal in values) {
-    //     allCategoriesWithTotals.addAll(categoriesWithTotal);
-    //   }
-    //   // Add categories with total amount of 0
-    //   allCategoriesWatched
-    //       .expand((categories) => categories)
-    //       .forEach((TransactionCategory category) {
-    //     if (!allCategoriesWithTotals
-    //         .any((c) => c.category.categoryPk == category.categoryPk)) {
-    //       allCategoriesWithTotals.add(CategoryWithTotal(
-    //           category: category, total: 0, transactionCount: 0));
-    //     }
-    //   });
-    //   return allCategoriesWithTotals;
-    // });
+        if (categoryTotals.containsKey(category.categoryPk)) {
+          final existing = categoryTotals[category.categoryPk]!;
+          categoryTotals[category.categoryPk] = existing.copyWith(
+            total: existing.total + convertedAmount,
+            transactionCount: existing.transactionCount + 1,
+          );
+        } else {
+          categoryTotals[category.categoryPk] = CategoryWithTotal(
+            category: category,
+            categoryBudgetLimit: budgetLimit,
+            total: convertedAmount,
+            transactionCount: 1,
+          );
+        }
+      }
+      List<CategoryWithTotal> sorted = categoryTotals.values.toList()
+        ..sort((a, b) => b.total.abs().compareTo(a.total.abs()));
+      return sorted;
+    });
   }
 
   // Remove balance correction and
@@ -6531,44 +6557,52 @@ class FinanceDatabase extends _$FinanceDatabase {
     bool onlyIncomeAndExpense = false, //Remove loan and balance corrections
     bool useAbsoluteSum = false,
   }) {
-    // we have to convert currencies to account for all wallets
-    List<Stream<TotalWithCount?>> mergedStreams = [];
-    for (TransactionWallet wallet in allWallets.list) {
-      final totalAmt = useAbsoluteSum
-          ? transactions.amount
-              .abs()
-              .sum(filter: transactions.paid.equals(true))
-          : transactions.amount.sum(filter: transactions.paid.equals(true));
-      final totalCount = transactions.transactionPk.count();
-      final query = selectOnly(transactions)
-        ..addColumns([totalAmt, totalCount])
-        ..where(onlyShowIfFollowsSearchFilters(transactions, searchFilters,
-                joinedWithSubcategoriesTable: null,
-                joinedWithCategories: false,
-                joinedWithBudgets: false,
-                joinedWithObjectives: false) &
-            transactions.walletFk.equals(wallet.walletPk) &
-            (onlyShowIfNotBalanceCorrection(transactions, isIncome) |
-                Constant(includeBalanceCorrection)) &
-            onlyShowIfOnlyExpenseAndIncome(transactions, onlyIncomeAndExpense) &
-            onlyShowIfFollowCustomPeriodCycle(
-              transactions,
-              followCustomPeriodCycle,
-              cycleSettingsExtension: cycleSettingsExtension,
-              forcedDateTimeRange: forcedDateTimeRange,
-            ) &
-            onlyShowBasedOnTimeRange(transactions, startDate, null, null) &
-            evaluateIfNull(
-                transactions.income.equals(isIncome ?? true), isIncome, true) &
-            onlyShowBasedOnIncome(transactions, isIncome));
-      mergedStreams.add(query
-          .map((row) => TotalWithCount(
-              total: (row.read(totalAmt) ?? 0) *
-                  (amountRatioToPrimaryCurrency(allWallets, wallet.currency)),
-              count: row.read(totalCount) ?? 0))
-          .watchSingle());
-    }
-    return totalTotalWithCountStream(mergedStreams);
+    // Optimized: Single query instead of per-wallet loop
+    final amountCol = transactions.amount;
+    final walletFkCol = transactions.walletFk;
+    final paidCol = transactions.paid;
+
+    final query = selectOnly(transactions)
+      ..addColumns([amountCol, walletFkCol, paidCol])
+      ..where(onlyShowIfFollowsSearchFilters(transactions, searchFilters,
+              joinedWithSubcategoriesTable: null,
+              joinedWithCategories: false,
+              joinedWithBudgets: false,
+              joinedWithObjectives: false) &
+          (onlyShowIfNotBalanceCorrection(transactions, isIncome) |
+              Constant(includeBalanceCorrection)) &
+          onlyShowIfOnlyExpenseAndIncome(transactions, onlyIncomeAndExpense) &
+          onlyShowIfFollowCustomPeriodCycle(
+            transactions,
+            followCustomPeriodCycle,
+            cycleSettingsExtension: cycleSettingsExtension,
+            forcedDateTimeRange: forcedDateTimeRange,
+          ) &
+          onlyShowBasedOnTimeRange(transactions, startDate, null, null) &
+          evaluateIfNull(
+              transactions.income.equals(isIncome ?? true), isIncome, true) &
+          onlyShowBasedOnIncome(transactions, isIncome));
+
+    return query.watch().map((rows) {
+      double total = 0;
+      int count = 0;
+      for (final row in rows) {
+        final isPaid = row.read(paidCol) ?? false;
+        if (!isPaid) continue;
+
+        final amount = row.read(amountCol) ?? 0;
+        final walletPk = row.read(walletFkCol);
+        final wallet = allWallets.indexedByPk[walletPk];
+
+        if (wallet != null) {
+          final factor =
+              amountRatioToPrimaryCurrency(allWallets, wallet.currency);
+          total += (useAbsoluteSum ? amount.abs() : amount) * factor;
+          count++;
+        }
+      }
+      return TotalWithCount(total: total, count: count);
+    });
   }
 
   Stream<double?> watchTotalOfWalletNoConversion(

@@ -11,7 +11,6 @@ import 'package:budget/struct/settings.dart';
 import 'package:budget/widgets/animatedExpanded.dart';
 import 'package:budget/widgets/breathingAnimation.dart';
 import 'package:budget/widgets/button.dart';
-import 'package:budget/widgets/fadeIn.dart';
 import 'package:budget/widgets/framework/pageFramework.dart';
 import 'package:budget/widgets/moreIcons.dart';
 import 'package:budget/widgets/navigationFramework.dart';
@@ -681,9 +680,8 @@ Future restorePurchases(BuildContext context) async {
 }
 
 bool hidePremiumPopup() {
-  return premiumPopupEnabled == false ||
-      appStateSettings["purchaseID"] != null ||
-      appStateSettings["previewDemo"] == true;
+  // Unlock all Cashew Pro features for this fork.
+  return true;
 }
 
 Future<bool> premiumPopupPushRoute(BuildContext context) async {
@@ -742,39 +740,6 @@ Future<bool> premiumPopupPastBudgets(BuildContext context) async {
 }
 
 Future premiumPopupAddTransaction(BuildContext context) async {
-  if (hidePremiumPopup()) return true;
-
-  print("Checking premium before adding transaction - " +
-      appStateSettings["premiumPopupAddTransactionCount"].toString());
-
-  try {
-    DateTime.parse(appStateSettings["premiumPopupAddTransactionLastShown"]);
-  } catch (e) {
-    print("Error parsing date for premium popup, resetting...");
-    updateSettings(
-        "premiumPopupAddTransactionLastShown", DateTime.now().toString(),
-        updateGlobalState: false);
-  }
-
-  if (DateTime.parse(appStateSettings["premiumPopupAddTransactionLastShown"])
-          .add(Duration(days: 1))
-          .isBefore(DateTime.now()) &&
-      appStateSettings["premiumPopupAddTransactionCount"] > 5) {
-    updateSettings("premiumPopupAddTransactionCount", 0,
-        updateGlobalState: false);
-    updateSettings(
-        "premiumPopupAddTransactionLastShown", DateTime.now().toString(),
-        updateGlobalState: false);
-    await pushRoute(
-      context,
-      PremiumPage(
-        popRouteWithPurchase: true,
-        canDismiss: true,
-      ),
-    );
-  }
-
-  // Always return true, this is not an enforced feature
   return true;
 }
 

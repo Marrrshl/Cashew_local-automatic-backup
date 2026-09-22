@@ -17,7 +17,6 @@ import 'package:budget/struct/uploadAttachment.dart';
 import 'package:budget/widgets/accountAndBackup.dart';
 import 'package:budget/widgets/navigationFramework.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:budget/widgets/button.dart';
 import 'package:budget/widgets/categoryIcon.dart';
 import 'package:budget/widgets/dropdownSelect.dart';
@@ -773,7 +772,8 @@ class _AddTransactionPageState extends State<AddTransactionPage>
       _titleInputController = new TextEditingController();
       _noteInputController = new LinkHighlighter();
 
-      Future.delayed(Duration(milliseconds: 0), () async {
+      // Use post frame callback instead of Future.delayed(0) for a more immediate feel
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (widget.transferBalancePopup) {
           openTransferBalancePopup();
           return;
@@ -4096,48 +4096,6 @@ String? getFileIdFromUrl(String url) {
 }
 
 Future<List<int>?> getGoogleDriveFileImageData(String url) async {
-  dynamic result = await openLoadingPopupTryCatch(
-    () async {
-      String? fileId = getFileIdFromUrl(url);
-      if (fileId == null) throw ("No file id found!");
-
-      if (googleUser == null) {
-        await signInGoogle(
-            drivePermissions: true, drivePermissionsAttachments: true);
-      }
-
-      final authHeaders = await googleUser!.authHeaders;
-      final authenticateClient = GoogleAuthClient(authHeaders);
-      drive.DriveApi driveApi = drive.DriveApi(authenticateClient);
-
-      List<int> dataStore = [];
-
-      drive.File fileMetadata =
-          await driveApi.files.get(fileId, $fields: 'size') as drive.File;
-      int totalBytes = int.parse(fileMetadata.size ?? "0");
-
-      dynamic response = await driveApi.files
-          .get(fileId, downloadOptions: drive.DownloadOptions.fullMedia);
-
-      num receivedBytes = 0;
-
-      loadingProgressKey.currentState?.setProgressPercentage(0);
-
-      await for (var data in response.stream) {
-        dataStore.insertAll(dataStore.length, data);
-        receivedBytes += data.length;
-        double progress = receivedBytes / totalBytes;
-        loadingProgressKey.currentState?.setProgressPercentage(progress);
-      }
-      loadingProgressKey.currentState?.setProgressPercentage(0);
-      return dataStore;
-    },
-    onError: (error) {
-      loadingProgressKey.currentState?.setProgressPercentage(0);
-      print(error);
-    },
-  );
-  if (result is List<int>) return result;
   return null;
 }
 

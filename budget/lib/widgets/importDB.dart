@@ -4,9 +4,11 @@ import 'package:budget/colors.dart';
 import 'package:budget/database/binary_string_conversion.dart';
 import 'package:budget/database/tables.dart';
 import 'package:budget/functions.dart';
+import 'package:budget/main.dart';
 import 'package:budget/pages/addTransactionPage.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/settings.dart';
+import 'package:budget/struct/localBackup.dart';
 import 'package:budget/struct/syncClient.dart';
 import 'package:budget/widgets/accountAndBackup.dart';
 import 'package:budget/widgets/button.dart';
@@ -28,6 +30,7 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter_charset_detector/flutter_charset_detector.dart';
 import 'package:budget/widgets/framework/popupFramework.dart';
+import 'package:budget/widgets/framework/pageFramework.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:universal_html/html.dart' as html;
 import 'dart:io';
@@ -56,17 +59,27 @@ Future<String?> importDBFileFromDevice(BuildContext context) async {
 
   await cancelAndPreventSyncOperation();
 
+  final Uint8List fileBytes = kIsWeb
+      ? result.files.single.bytes!
+      : await File(result.files.single.path ?? "").readAsBytes();
+
   if (kIsWeb) {
-    Uint8List fileBytes = result.files.single.bytes!;
     await overwriteDefaultDB(fileBytes);
   } else {
-    File file = File(result.files.single.path ?? "");
-    Uint8List fileBytes = await file.readAsBytes();
+    await database.close();
     await overwriteDefaultDB(fileBytes);
+    database = await constructDb("db");
   }
   await resetLanguageToSystem(context);
   await updateSettings("databaseJustImported", true,
       pagesNeedingRefresh: [], updateGlobalState: false);
+  await updateSettings(hasPromptedBackupSetupSetting, true,
+      pagesNeedingRefresh: [], updateGlobalState: false);
+  if (!kIsWeb) {
+    await initializeSettings();
+    appStateKey.currentState?.refreshAppState();
+    refreshPageFrameworks();
+  }
   return result.files.single.name;
 }
 
@@ -106,16 +119,7 @@ Future importDB(BuildContext context, {ignoreOverwriteWarning = false}) async {
       () async {
         return await importDBFileFromDevice(context);
       },
-      onSuccess: (result) {
-        if (result != null)
-          restartAppPopup(
-            context,
-            description: kIsWeb
-                ? "refresh-required-to-load-backup".tr()
-                : "restart-required-to-load-backup".tr(),
-            // codeBlock: result.toString(),
-          );
-      },
+      onSuccess: (result) {},
     );
   }
 }

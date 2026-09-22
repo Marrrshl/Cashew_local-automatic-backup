@@ -99,12 +99,20 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   _scrollListener() {
-    double percent = _scrollController.offset / (200);
-    if (percent <= 1) {
-      double offset = _scrollController.offset;
-      if (percent >= 1) offset = 0;
-      _animationControllerHeader.value = 1 - offset / (200);
-      _animationControllerHeader2.value = 1 - offset * 2 / (200);
+    if (!_scrollController.hasClients) return;
+    double offset = _scrollController.offset;
+    if (offset < 0) offset = 0;
+    if (offset > 200) offset = 200;
+
+    double newValue1 = 1 - offset / 200;
+    double newValue2 = 1 - (offset * 2) / 200;
+    if (newValue2 < 0) newValue2 = 0;
+
+    if (_animationControllerHeader.value != newValue1) {
+      _animationControllerHeader.value = newValue1;
+    }
+    if (_animationControllerHeader2.value != newValue2) {
+      _animationControllerHeader2.value = newValue2;
     }
   }
 
@@ -158,21 +166,23 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
     Widget? homePageTransactionsList =
         isHomeScreenSectionEnabled(context, "showTransactionsList") == true
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  slidingSelector,
-                  SizedBox(height: 8),
-                  HomeTransactions(
-                      selectedSlidingSelector: selectedSlidingSelector),
-                  SizedBox(height: 7),
-                  Center(
-                    child: ViewAllTransactionsButton(),
-                  ),
-                  if (enableDoubleColumn(context)) SizedBox(height: 35),
-                ],
+            ? RepaintBoundary(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    slidingSelector,
+                    SizedBox(height: 8),
+                    HomeTransactions(
+                        selectedSlidingSelector: selectedSlidingSelector),
+                    SizedBox(height: 7),
+                    Center(
+                      child: ViewAllTransactionsButton(),
+                    ),
+                    if (enableDoubleColumn(context)) SizedBox(height: 35),
+                  ],
+                ),
               )
             : null;
     if (homePageTransactionsList != null)

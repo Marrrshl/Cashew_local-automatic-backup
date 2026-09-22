@@ -32,13 +32,12 @@ import 'package:flutter/services.dart';
 import 'package:budget/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'firebase_options.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:budget/struct/localBackup.dart';
 
 // Requires hot restart when changed
 bool enableDevicePreview = false && kDebugMode;
@@ -47,19 +46,28 @@ bool allowDangerousDebugFlags = kDebugMode;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
   await EasyLocalization.ensureInitialized();
   sharedPreferences = await SharedPreferences.getInstance();
+  try {
+    await restoreLocalBackupBeforeDatabase();
+  } catch (e) {
+    print("Error restoring local backup: $e");
+  }
   database = await constructDb('db');
-  notificationPayload = await initializeNotifications();
+  
+  // Parallelize non-dependent initialization tasks for faster startup
+  final results = await Future.wait([
+    initializeNotifications(),
+    rootBundle.loadString('assets/static/generated/currencies.json'),
+    rootBundle.loadString('assets/static/language-names.json'),
+    initializeSettings(),
+  ]);
+
+  notificationPayload = results[0] as String?;
+  currenciesJSON = json.decode(results[1] as String);
+  languageNamesJSON = json.decode(results[2] as String);
+  
   entireAppLoaded = false;
-  currenciesJSON = await json.decode(
-      await rootBundle.loadString('assets/static/generated/currencies.json'));
-  languageNamesJSON = await json
-      .decode(await rootBundle.loadString('assets/static/language-names.json'));
-  await initializeSettings();
   tz.initializeTimeZones();
   final String? locationName = await FlutterNativeTimezone.getLocalTimezone();
   tz.setLocalLocation(tz.getLocation(locationName ?? "America/New_York"));
@@ -103,12 +111,21 @@ class InitializeApp extends StatefulWidget {
 }
 
 class _InitializeAppState extends State<InitializeApp> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
   void refreshAppState() {
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appContext = navigatorKey.currentContext ?? context;
+      initializeLocalBackups(appContext);
+    });
     return App(key: ValueKey("Main App"));
   }
 }
@@ -188,6 +205,8 @@ class App extends StatelessWidget {
           updateGlobalAppLifecycleState: true,
           onAppResume: () async {
             await setHighRefreshRate();
+            final appContext = navigatorKey.currentContext ?? context;
+            await checkBackupStatusOnResume(appContext);
           },
           child: InitializeBiometrics(
             child: InitializeNotificationService(

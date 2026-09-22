@@ -70,7 +70,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lazy_indexed_stack/flutter_lazy_indexed_stack.dart';
-import 'package:googleapis/drive/v3.dart';
 import 'package:provider/provider.dart';
 // import 'package:feature_discovery/feature_discovery.dart';
 
@@ -144,19 +143,7 @@ Future<bool> runAllCloudFunctions(BuildContext context,
     loadingIndeterminateKey.currentState?.setVisibility(false);
     runningCloudFunctions = false;
     canSyncData = true;
-    if (e is DetailedApiRequestError &&
-            e.status == 401 &&
-            forceSignIn == true ||
-        e is PlatformException) {
-      // Request had invalid authentication credentials. Try logging out and back in.
-      // This stems from silent sign-in not providing the credentials for GDrive API for e.g.
-      await refreshGoogleSignIn();
-      runAllCloudFunctions(context);
-    } else {
-      if (kIsWeb && appStateSettings["webForceLoginPopupOnLaunch"] == true) {
-        signOutGoogle();
-      }
-    }
+    return false;
     return false;
   }
   loadingIndeterminateKey.currentState?.setVisibility(false);
@@ -227,7 +214,7 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
 
       // Do this after cloud functions attempt (i.e. if user is not signed in we can show it)
       if (isRatingPopupShown == false && isChangelogShown == false) {
-        openBackupReminderPopupCheck(context);
+        // Cloud backup reminders are disabled in the local-only fork.
       }
 
       // Mark subscriptions as paid AFTER syncing with cloud
@@ -336,21 +323,25 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
       child: Stack(children: [
         Scaffold(
           resizeToAvoidBottomInset: false,
-          body: FadeIndexedStack(
-            children: [...pages, ...pagesExtended],
-            index: currentPage,
-            duration: !kIsWeb
-                ? Duration.zero
-                : appStateSettings["batterySaver"]
-                    ? Duration.zero
-                    : Duration(milliseconds: 300),
+          body: RepaintBoundary(
+            child: FadeIndexedStack(
+              children: [...pages, ...pagesExtended],
+              index: currentPage,
+              duration: !kIsWeb
+                  ? Duration.zero
+                  : appStateSettings["batterySaver"]
+                      ? Duration.zero
+                      : Duration(milliseconds: 300),
+            ),
           ),
           extendBody: false,
-          bottomNavigationBar: BottomNavBar(
-            currentNavigationStackedIndex: currentPage,
-            onChanged: (index) {
-              changePage(index);
-            },
+          bottomNavigationBar: RepaintBoundary(
+            child: BottomNavBar(
+              currentNavigationStackedIndex: currentPage,
+              onChanged: (index) {
+                changePage(index);
+              },
+            ),
           ),
         ),
         Align(
@@ -1021,7 +1012,7 @@ class FadeIndexedStack extends StatefulWidget {
     required this.index,
     required this.children,
     this.duration = const Duration(
-      milliseconds: 250,
+      milliseconds: 150,
     ),
     this.alignment = AlignmentDirectional.topStart,
     this.textDirection,
