@@ -9,29 +9,20 @@
 <br />
 
 <div align="center">
-  <a href="https://apps.apple.com/us/app/cashew-expense-budget-tracker/id6463662930">
-    <img alt="iOS App Store Badge" src="promotional/store-banners/app-store-badge.png" height="60px">
-  </a>
-  <a href="https://play.google.com/store/apps/details?id=com.budget.tracker_app">
-    <img alt="Google Play Badge" src="promotional/store-banners/google-play-badge.png" height="60px">
-  </a>
-  <a href="https://github.com/jameskokoska/Cashew/releases/">
+  <a href="https://github.com/Marrrshl/Cashew_local-automatic-backup/releases/">
     <img alt="GitHub Badge" src="promotional/store-banners/github-badge.png" height="60px">
-  </a>
-  <a href="https://budget-track.web.app/">
-    <img alt="PWA Badge" src="promotional/store-banners/pwa-badge.png" height="60px">
   </a>
 </div>
 
-<br />
-
-<a href="https://cashewapp.web.app/">
-  <div align="center">
-    <img width="95%" src="promotional/GitHub/SocialPreviewGitHub.png" alt="Promo banner">
-  </div>
-</a>
+<p align="center">
+  Install and auto-update via <a href="https://github.com/ImranR98/Obtainium">Obtainium</a> pointed at this repo's releases.
+</p>
 
 <br />
+
+---
+
+> **This is a personal fork** of [jameskokoska/Cashew](https://github.com/jameskokoska/Cashew), frozen at v5.3.4+396, with a custom app ID/icon (so it can be installed alongside the official app) and a local automatic-backup feature added: the app writes a rolling backup to a folder you choose (e.g. one synced across devices with Syncthing or similar), and automatically loads the newest backup from that folder on startup. Not affiliated with the original developer, and not accepting contributions or issues — this is maintained for personal use only. All credit for the original app goes to the original developer.
 
 ---
 
@@ -39,68 +30,15 @@ Cashew is a full-fledged, feature-rich application designed to empower users in 
 
 ---
 
-## Features
-
-<a href="https://www.youtube.com/watch?v=Oar9pkc7BSc&t=235s">
-  <div align="center">
-    <img width="80%" src="promotional/youtube-promo/thumbnail-oss.png" alt="Review Video">
-  </div>
-</a>
-<p align="center">
-  Cashew was featured on <a href="https://www.youtube.com/watch?v=Oar9pkc7BSc&t=235s">YouTube</a> on 'The Best Free and Open Source Apps in 2024!' (and in the thumbnail!)
-</p>
-
-<br />
-
-<a href="https://www.youtube.com/watch?v=NYZd7IKn1oY&t=536s">
-  <div align="center">
-    <img width="80%" src="promotional/youtube-promo/thumbnail-year-best.png" alt="Review Video">
-  </div>
-</a>
-<p align="center">
-  Cashew was featured on <a href="https://www.youtube.com/watch?v=NYZd7IKn1oY&t=536s">YouTube</a> on 'The Best Apps of 2023!'
-</p>
-
-<br>
-
-<a href="https://www.youtube.com/watch?v=2MwWmqcn--s&t=261s">
-  <div align="center">
-    <img width="80%" src="promotional/youtube-promo/thumbnail.png" alt="Review Video">
-  </div>
-</a>
-<p align="center">
-  Cashew was featured on <a href="https://www.youtube.com/watch?v=2MwWmqcn--s&t=261s">YouTube</a> on 'Top Android Apps! (November 2023)'
-</p>
-
-<br>
-
-<div align="center">
-  <img width="80%" src="promotional/play-store-feature/play-store-feature.png" alt="Play Store Feature">
-</div>
-<p align="center">
-  Cashew was featured on <a href="https://play.google.com/store/apps/editorial?id=mc_apps_new_on_play_fcp">Google Play's Editorial 'New Apps We Love'</a> (November 2023)!
-</p>
-
-<br>
-
-<a href="https://github.com/nyas1/Material-You-app-list?tab=readme-ov-file#-economy:~:text=MDY%20Celenganku-,MDY%20Cashew,-MDY%20Allowance%20FOSS">
-  <div align="center">
-    <img width="80%" src="promotional/material-apps-feature/material-apps-feature.png" alt="Material Apps List Feature">
-  </div>
-</a>
-<p align="center">
-  Cashew was featured in the <a href="https://github.com/nyas1/Material-You-app-list?tab=readme-ov-file#-economy:~:text=MDY%20Celenganku-,MDY%20Cashew,-MDY%20Allowance%20FOSS">Material You Apps List</a>!
-</p>
-
 ## Release
 
-Check out the [official website](https://cashewapp.web.app/)!
+This fork is available only via [GitHub Releases](https://github.com/Marrrshl/Cashew_local-automatic-backup/releases/), installed and auto-updated using [Obtainium](https://github.com/ImranR98/Obtainium).
 
-This application is available on the [App Store](https://apps.apple.com/us/app/cashew-expense-budget-tracker/id6463662930), [Google Play](https://play.google.com/store/apps/details?id=com.budget.tracker_app), [GitHub](https://github.com/jameskokoska/Cashew/releases/) and as a [Web App (PWA)](https://budget-track.web.app/).
+For the original, actively-developed app (App Store, Google Play, Web App, and upstream GitHub releases), see the [official Cashew repository](https://github.com/jameskokoska/Cashew) and [website](https://cashewapp.web.app/).
 
 ### Changelog
 
-Changes and progress about development is all heavily documented in GitHub [commits](https://github.com/jameskokoska/Cashew/commits/main) and in the [changelog](https://github.com/jameskokoska/Cashew/blob/main/budget/lib/widgets/showChangelog.dart)
+Changes and progress for the original app are documented in the upstream [commits](https://github.com/jameskokoska/Cashew/commits/main) and [changelog](https://github.com/jameskokoska/Cashew/blob/main/budget/lib/widgets/showChangelog.dart). This fork does not maintain its own separate changelog beyond its GitHub release notes.
 
 ## Key Features
 
@@ -128,7 +66,7 @@ Changes and progress about development is all heavily documented in GitHub [comm
 ### 🔒 Enhanced Security and Accessibility
 
 - Biometric Lock: Secure budget data using biometric authentication, adding an extra layer of privacy.
-- Google Login: Conveniently log in to the app using your Google account, ensuring a streamlined and hassle-free authentication process.
+- Google Login: Conveniently log in to the app using your Google account, ensuring a streamlined and hassle-free authentication process. **Note: not configured/functional in this fork.**
 
 ### 🎨 User Experience and Design
 
@@ -141,8 +79,8 @@ Changes and progress about development is all heavily documented in GitHub [comm
 
 ### ☁ Backup and Syncing
 
-- Cross-Device Sync: Keep budget data synchronized across all devices, ensuring access to financial information wherever you go.
-- Google Drive Backup: Safeguard budget data by utilizing Google Drive's backup functionality, allowing easy restoration of data if needed.
+- Local Automatic Backup (this fork): Choose a folder (e.g. one synced across devices with Syncthing or similar), and the app automatically writes a rolling backup on every data change and loads the newest backup on startup — no Google account required.
+- Google Drive Backup: Safeguard budget data by utilizing Google Drive's backup functionality, allowing easy restoration of data if needed. **Note: not configured/functional in this fork.**
 
 ### 💿 Smart Automation
 
@@ -292,38 +230,15 @@ This repository contains, bundled in, modified versions of the discontinued pack
 - https://pub.dev/packages/implicitly_animated_reorderable_list
 - https://pub.dev/packages/sliding_sheet
 
-## Translations
-
-The translations are available here: https://docs.google.com/spreadsheets/d/1QQqt28cmrby6JqxLm-oxUXCuM3alniLJ6IRhcPJDOtk/edit?usp=sharing. If you would like to help translate, please reach out on email: dapperappdeveloper@gmail.com
-
-### To Update Translations
-
-1. Run `budget\assets\translations\generate-translations.py`
-2. Restart the application
-
 ## Developer Notes
 
-### Pull Requests and Contributions
-
-Unfortunately, I am currently not accepting contributions due to licensing and credits. Since this application turns some profits, I want to avoid any muddy water when it comes to compensation for contributions. You are free to submit an [issue](https://github.com/jameskokoska/Cashew/issues) and I can consider it!
+These notes are inherited from the original project and remain accurate for working with this codebase.
 
 ### Android Release
 
 - To build an app-bundle Android release, run `flutter build appbundle --release`
 
 Note: required Android SDK.
-
-### iOS Release
-
-- To build an IPA iOS release, run `flutter build ipa`
-
-Note: requires MacOS.
-
-### Firebase Deployment
-
-- To deploy to firebase, run `firebase deploy`
-
-Note: required Firebase.
 
 ### GitHub release
 
@@ -332,13 +247,12 @@ Note: required Firebase.
 - Push the tag
 - `git push origin <version>`
 - Create the release and upload binaries
-- https://github.com/jameskokoska/Cashew/releases/new
 
 ### Scripts
 
 `deploy_and_build_windows.bat`
 
-- Deploy to Firebase and build the apk and appbundle
+- Deploy to Firebase and build the apk and appbundle (not used in this fork; Firebase deployment is not configured here)
 
 `open_release_builds.bat`
 
