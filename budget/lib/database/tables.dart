@@ -2689,7 +2689,9 @@ class FinanceDatabase extends _$FinanceDatabase {
 
   //create or update a new wallet
   Future<int> createOrUpdateWallet(TransactionWallet wallet,
-      {DateTime? customDateTimeModified, bool insert = false}) async {
+      {DateTime? customDateTimeModified,
+      bool insert = false,
+      bool isUserEdit = true}) async {
     wallet = wallet.copyWith(
         dateTimeModified: Value(customDateTimeModified ?? DateTime.now()));
     WalletsCompanion companionToInsert = wallet.toCompanion(true);
@@ -2704,7 +2706,7 @@ class FinanceDatabase extends _$FinanceDatabase {
 
     final result = await into(wallets)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
-    scheduleAutomaticLocalBackup(isUserEdit: true);
+    scheduleAutomaticLocalBackup(isUserEdit: isUserEdit);
     return result;
   }
 
@@ -3952,6 +3954,7 @@ class FinanceDatabase extends _$FinanceDatabase {
     bool updateSharedEntry = true,
     DateTime? customDateTimeModified,
     bool insert = false,
+    bool isUserEdit = true,
   }) async {
     if (updateSharedEntry == true && appStateSettings["sharedBudgets"] == false)
       updateSharedEntry = false;
@@ -3970,7 +3973,7 @@ class FinanceDatabase extends _$FinanceDatabase {
     int result = await into(categories)
         .insert((companionToInsert), mode: InsertMode.insertOrReplace);
 
-    scheduleAutomaticLocalBackup(isUserEdit: true);
+    scheduleAutomaticLocalBackup(isUserEdit: isUserEdit);
     return result;
   }
 

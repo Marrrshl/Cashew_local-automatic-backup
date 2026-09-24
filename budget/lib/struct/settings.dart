@@ -216,6 +216,7 @@ Future<bool> updateSettings(
     localBackupDirectorySetting,
     localBackupRetentionSetting,
     hasPromptedBackupSetupSetting,
+    "hasOnboarded",
     "databaseJustImported",
     "numLogins",
     "appOpenedHour",

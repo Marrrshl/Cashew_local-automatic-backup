@@ -17,6 +17,7 @@ Future<bool> initializeDefaultDatabase() async {
     await database.createOrUpdateWallet(
       defaultWallet(),
       customDateTimeModified: DateTime(0),
+      isUserEdit: false,
     );
   }
   return true;
@@ -30,8 +31,11 @@ Future<bool> createDefaultCategories() async {
     } catch (e) {
       print(
           e.toString() + " default category does not already exist, creating");
-      await database.createOrUpdateCategory(category,
-          customDateTimeModified: DateTime(0));
+      await database.createOrUpdateCategory(
+        category,
+        customDateTimeModified: DateTime(0),
+        isUserEdit: false,
+      );
     }
   }
   return true;

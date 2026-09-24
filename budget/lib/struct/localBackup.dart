@@ -35,6 +35,10 @@ void markUserMadeEdit() {
   }
 }
 
+void resetUserMadeEdit() {
+  _userHasMadeEditInThisSession = false;
+}
+
 String _trOrFallback(String key, String fallback) {
   String result = key.tr();
   if (result == key || result.trim().isEmpty) {
@@ -188,6 +192,16 @@ Future<bool> restoreLocalBackupBeforeDatabase() async {
   try {
     final dbFolder = await getApplicationDocumentsDirectory();
     final dbFile = File(p.join(dbFolder.path, "db.sqlite"));
+    final walFile = File(p.join(dbFolder.path, "db.sqlite-wal"));
+    final shmFile = File(p.join(dbFolder.path, "db.sqlite-shm"));
+
+    try {
+      if (await walFile.exists()) await walFile.delete();
+      if (await shmFile.exists()) await shmFile.delete();
+    } catch (e) {
+      print("Startup check: Error deleting WAL/SHM files: $e");
+    }
+
     await dbFile.writeAsBytes(fileBytes, flush: true);
     print("Startup check: Successfully imported $localBackupFileName (${fileBytes.length} bytes).");
 
@@ -270,6 +284,7 @@ Future<void> showBackupFolderSetupDialog(BuildContext context) async {
       timeout: const Duration(milliseconds: 8000),
     ));
   }
+  resetUserMadeEdit();
 }
 
 class BackupSetupDialog extends StatefulWidget {

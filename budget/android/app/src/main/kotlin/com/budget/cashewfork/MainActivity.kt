@@ -129,16 +129,28 @@ class MainActivity: FlutterFragmentActivity() {
                             return@setMethodCallHandler
                         }
 
-                        // Step 1: If cashew-latest.sql exists, rename to cashew-backup-<timestamp>.sql
                         val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
                         val timestampStr = dateFormat.format(Date())
                         val existingLatest = docDir.findFile(fileName)
+
+                        // Step 1: If cashew-latest.sql exists, create a rotated snapshot copy
                         if (existingLatest != null && existingLatest.exists()) {
-                            existingLatest.renameTo("cashew-backup-$timestampStr.sql")
+                            val rotatedFile = docDir.createFile("application/octet-stream", "cashew-backup-$timestampStr.sql")
+                            if (rotatedFile != null) {
+                                val rotatedOut = contentResolver.openOutputStream(rotatedFile.uri, "w")
+                                if (rotatedOut != null) {
+                                    val inStream = contentResolver.openInputStream(existingLatest.uri)
+                                    inStream?.use { input ->
+                                        rotatedOut.use { output ->
+                                            input.copyTo(output)
+                                        }
+                                    }
+                                }
+                            }
                         }
 
-                        // Step 2: Write fresh bytes as cashew-latest.sql
-                        var targetFile = docDir.findFile(fileName)
+                        // Step 2: Write fresh bytes into cashew-latest.sql directly (in-place)
+                        var targetFile = existingLatest
                         if (targetFile == null || !targetFile.exists()) {
                             targetFile = docDir.createFile("application/octet-stream", fileName)
                         }
@@ -147,18 +159,16 @@ class MainActivity: FlutterFragmentActivity() {
                             return@setMethodCallHandler
                         }
 
-                        if (targetFile.name != fileName) {
-                            targetFile.renameTo(fileName)
-                        }
-
-                        val outputStream = contentResolver.openOutputStream(targetFile.uri, "w")
+                        val outputStream = contentResolver.openOutputStream(targetFile.uri, "rwt")
+                            ?: contentResolver.openOutputStream(targetFile.uri, "w")
                         if (outputStream == null) {
                             result.error("WRITE_FAILED", "Cannot open output stream", null)
                             return@setMethodCallHandler
                         }
-                        outputStream.write(bytes)
-                        outputStream.flush()
-                        outputStream.close()
+                        outputStream.use { out ->
+                            out.write(bytes)
+                            out.flush()
+                        }
 
                         // Step 3: Check rotated cashew-backup-*.sql files and delete oldest excess
                         val children = docDir.listFiles()

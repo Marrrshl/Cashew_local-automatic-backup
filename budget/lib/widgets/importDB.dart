@@ -39,14 +39,19 @@ import 'package:universal_html/html.dart' show AnchorElement;
 import 'package:path/path.dart' as p;
 
 Future<String?> importDBFileFromDevice(BuildContext context) async {
+  try {
+    await FilePicker.platform.clearTemporaryFiles();
+  } catch (_) {}
+
   // For some reason, iOS does not let us select SQL files if we limit
   FilePickerResult? result = getPlatform() == PlatformOS.isIOS
-      ? await FilePicker.platform.pickFiles()
+      ? await FilePicker.platform.pickFiles(withData: true)
       : await FilePicker.platform.pickFiles(
           allowedExtensions: ['sql', 'sqlite'],
           type: FileType.custom,
+          withData: true,
         );
-  if (result == null) {
+  if (result == null || result.files.isEmpty) {
     openSnackbar(SnackbarMessage(
       title: "error-importing".tr(),
       description: "no-file-selected".tr(),
@@ -59,9 +64,21 @@ Future<String?> importDBFileFromDevice(BuildContext context) async {
 
   await cancelAndPreventSyncOperation();
 
-  final Uint8List fileBytes = kIsWeb
-      ? result.files.single.bytes!
-      : await File(result.files.single.path ?? "").readAsBytes();
+  Uint8List? fileBytes = result.files.single.bytes;
+  if (fileBytes == null && result.files.single.path != null) {
+    fileBytes = await File(result.files.single.path!).readAsBytes();
+  }
+
+  if (fileBytes == null || fileBytes.isEmpty) {
+    openSnackbar(SnackbarMessage(
+      title: "error-importing".tr(),
+      description: "no-file-selected".tr(),
+      icon: appStateSettings["outlinedIcons"]
+          ? Icons.warning_outlined
+          : Icons.warning_rounded,
+    ));
+    return null;
+  }
 
   if (kIsWeb) {
     await overwriteDefaultDB(fileBytes);

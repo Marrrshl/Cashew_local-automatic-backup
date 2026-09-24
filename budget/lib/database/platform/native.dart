@@ -54,7 +54,17 @@ Future<DBFileInfo> getCurrentDBFileInfo() async {
 Future overwriteDefaultDB(Uint8List dataStore) async {
   final dbFolder = await getApplicationDocumentsDirectory();
   final dbFile = File(p.join(dbFolder.path, 'db.sqlite'));
-  await dbFile.writeAsBytes(dataStore);
+  final walFile = File(p.join(dbFolder.path, 'db.sqlite-wal'));
+  final shmFile = File(p.join(dbFolder.path, 'db.sqlite-shm'));
+
+  try {
+    if (await walFile.exists()) await walFile.delete();
+    if (await shmFile.exists()) await shmFile.delete();
+  } catch (e) {
+    print("Error deleting WAL/SHM files before DB overwrite: $e");
+  }
+
+  await dbFile.writeAsBytes(dataStore, flush: true);
   // we need to be able to sync with others after the restore
   await sharedPreferences.setString("dateOfLastSyncedWithClient", "{}");
 }
